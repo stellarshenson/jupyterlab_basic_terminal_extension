@@ -1,0 +1,17 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.5.2
+_src_path: https://github.com/jupyterlab/extension-template
+author_email: konrad.jelen@gmail.com
+author_name: Stellars Henson
+has_ai_rules: false
+has_binder: false
+has_settings: false
+kind: frontend-and-server
+labextension_name: jupyterlab_basic_terminal_extension
+project_short_description: Jupyterlab extension to make a command that allows launching
+    a utility terminal that runs without shell. This can be used to start and show
+    console utilities, that when finished - close the terminal window / tab
+python_name: jupyterlab_basic_terminal_extension
+repository: ''
+test: true
+
