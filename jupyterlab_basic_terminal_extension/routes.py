@@ -11,14 +11,39 @@ from jupyter_server.utils import url_path_join
 
 URL_PREFIX = "jupyterlab-basic-terminal-extension"
 
+# bash one-liner that polls `stty size` until the WebSocket client has resized
+# the pty to a usable window (>=20x80), clears the screen, then `exec`s the
+# real argv. The exec replaces bash so the pty's only process is the target -
+# auto-close on exit still works. 5s timeout means if no client ever connects,
+# we still launch rather than hanging the pty forever.
+_INIT_WAITER = (
+    "for i in $(seq 1 50); do "
+    "read r c < <(stty size 2>/dev/null || echo '0 0'); "
+    'if [ "$r" -ge 20 ] && [ "$c" -ge 80 ]; then break; fi; '
+    "sleep 0.1; "
+    "done; "
+    "clear; "
+    'exec "$@"'
+)
+
+
+def _wrap_with_init(argv: list[str]) -> list[str]:
+    """Prepend the terminal-init waiter so the spawned argv only starts once
+    the JL terminal widget has connected and sized the pty."""
+    return ["/bin/bash", "-c", _INIT_WAITER, "basic-terminal-init", *argv]
+
 
 class LaunchTerminalHandler(APIHandler):
     """Spawn a JL terminal whose pty's only process is the supplied argv.
 
     Bypasses ``terminal:create-new`` (which spawns the user's $SHELL) by
     calling ``jupyter_server_terminals``' ``TerminalManager.create`` with
-    terminado's per-call ``shell_command`` kwarg. The pty's only process is
-    the caller-supplied utility - when it exits, the JL tab closes.
+    terminado's per-call ``shell_command`` kwarg. A short bash waiter
+    (``_INIT_WAITER``) ``exec``s into the caller-supplied argv only after
+    the WebSocket client has resized the pty to a usable window, so dialog /
+    TUI utilities see a real terminal size at launch instead of the pty's
+    default. After exec the pty's only process is the target - when it
+    exits, the JL tab closes.
     """
 
     @tornado.web.authenticated
@@ -53,7 +78,7 @@ class LaunchTerminalHandler(APIHandler):
             self.finish(json.dumps({"error": "terminal_service_unavailable"}))
             return
 
-        kwargs: dict = {"shell_command": argv}
+        kwargs: dict = {"shell_command": _wrap_with_init(argv)}
         if cwd is not None:
             kwargs["cwd"] = cwd
         model = terminal_manager.create(**kwargs)

@@ -27,7 +27,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       caption:
         'Spawn a JupyterLab terminal whose only process is the supplied argv. Tab is focused on launch and closes when the process exits.',
       execute: async args => {
-        const { argv, cwd } = (args as unknown) as ILaunchTerminalArgs;
+        const { argv, cwd } = args as unknown as ILaunchTerminalArgs;
         if (!Array.isArray(argv) || argv.length === 0) {
           throw new Error(
             `${COMMAND_LAUNCH}: argv must be a non-empty string array`

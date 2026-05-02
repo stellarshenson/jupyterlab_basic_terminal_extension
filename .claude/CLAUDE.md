@@ -24,6 +24,7 @@ The following workspace rules are STRICTLY ENFORCED for this project:
 `jupyterlab_basic_terminal_extension` is a JupyterLab 4 extension that exposes a command for launching a utility terminal that runs without a shell. The terminal is intended for short-lived console utilities - when the utility process exits, the terminal window/tab closes automatically.
 
 **Technology Stack**:
+
 - JupyterLab 4 (`@jupyterlab/application`, `@jupyterlab/coreutils`, `@jupyterlab/services`)
 - TypeScript 5 frontend (`src/`) compiled to `lib/` and bundled into `jupyterlab_basic_terminal_extension/labextension/`
 - Python 3.10+ server extension (`jupyterlab_basic_terminal_extension/`) using `jupyter_server`
@@ -32,6 +33,7 @@ The following workspace rules are STRICTLY ENFORCED for this project:
 - jupyter-releaser for tagged releases via GitHub Actions
 
 **Project Naming**:
+
 - npm package: `jupyterlab_basic_terminal_extension`
 - PyPI package: `jupyterlab-basic-terminal-extension` (hyphens, normalized by PyPI)
 
