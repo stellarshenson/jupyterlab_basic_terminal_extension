@@ -22,6 +22,9 @@ const plugin: JupyterFrontEndPlugin<void> = {
     'Launch a JupyterLab terminal whose pty runs a utility directly with no shell. The tab is focused on launch and closes when the process exits.',
   autoStart: true,
   activate: (app: JupyterFrontEnd) => {
+    console.log(
+      'JupyterLab extension jupyterlab_basic_terminal_extension is activated!'
+    );
     app.commands.addCommand(COMMAND_LAUNCH, {
       label: 'Launch utility terminal (shell-less)',
       caption:
