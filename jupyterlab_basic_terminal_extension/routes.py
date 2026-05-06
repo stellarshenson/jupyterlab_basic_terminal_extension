@@ -11,15 +11,21 @@ from jupyter_server.utils import url_path_join
 
 URL_PREFIX = "jupyterlab-basic-terminal-extension"
 
-# bash one-liner that polls `stty size` until the WebSocket client has resized
-# the pty to a usable window (>=20x80), clears the screen, then `exec`s the
-# real argv. The exec replaces bash so the pty's only process is the target -
-# auto-close on exit still works. 5s timeout means if no client ever connects,
-# we still launch rather than hanging the pty forever.
+# bash one-liner that waits for the JL WebSocket client to resize the pty
+# from terminado's default 24x80 before `exec`ing the real argv. A fixed
+# size-threshold check is a no-op (24x80 already passes any "is at least
+# 80 cols" test), so we capture the initial size, install a WINCH trap,
+# and break on either signal or a polled size diff. The exec replaces
+# bash so the pty's only process is the target - auto-close on exit
+# still works. 5s timeout means if no client ever connects we still
+# launch rather than hanging the pty forever.
 _INIT_WAITER = (
+    "trap 'CHANGED=1' WINCH; "
+    "read R0 C0 < <(stty size 2>/dev/null || echo '0 0'); "
     "for i in $(seq 1 50); do "
+    'if [ -n "$CHANGED" ]; then break; fi; '
     "read r c < <(stty size 2>/dev/null || echo '0 0'); "
-    'if [ "$r" -ge 20 ] && [ "$c" -ge 80 ]; then break; fi; '
+    'if [ "$r" != "$R0" ] || [ "$c" != "$C0" ]; then break; fi; '
     "sleep 0.1; "
     "done; "
     "clear; "
