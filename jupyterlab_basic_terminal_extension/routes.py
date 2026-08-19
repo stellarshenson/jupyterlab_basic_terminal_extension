@@ -73,7 +73,17 @@ class LaunchTerminalHandler(APIHandler):
 
         cwd = body.get("cwd")
         if cwd is not None:
-            if not isinstance(cwd, str) or not os.path.isdir(cwd):
+            if not isinstance(cwd, str):
+                self.set_status(400)
+                self.finish(json.dumps({"error": "invalid_cwd"}))
+                return
+            # Non-absolute cwd is a server-relative API path (what the file
+            # browser reports; '' is the server root itself) - resolve it
+            # against the server root before validating.
+            if not os.path.isabs(cwd):
+                root = os.path.expanduser(self.settings["server_root_dir"])
+                cwd = os.path.join(root, cwd)
+            if not os.path.isdir(cwd):
                 self.set_status(400)
                 self.finish(json.dumps({"error": "invalid_cwd"}))
                 return

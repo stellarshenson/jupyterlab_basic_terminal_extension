@@ -3,10 +3,17 @@ import {
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
 
+import { IDefaultFileBrowser } from '@jupyterlab/filebrowser';
+
 import { requestAPI } from './request';
 
 export interface ILaunchTerminalArgs {
   argv: string[];
+  /**
+   * Directory to spawn in - absolute, or a server-relative API path ('' is
+   * the server root). When omitted, falls back to the file browser's
+   * current path if the browser is available.
+   */
   cwd?: string;
 }
 
@@ -21,7 +28,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
   description:
     'Launch a JupyterLab terminal whose pty runs a utility directly with no shell. The tab is focused on launch and closes when the process exits.',
   autoStart: true,
-  activate: (app: JupyterFrontEnd) => {
+  optional: [IDefaultFileBrowser],
+  activate: (
+    app: JupyterFrontEnd,
+    defaultBrowser: IDefaultFileBrowser | null
+  ) => {
     console.log(
       'JupyterLab extension jupyterlab_basic_terminal_extension is activated!'
     );
@@ -36,12 +47,17 @@ const plugin: JupyterFrontEndPlugin<void> = {
             `${COMMAND_LAUNCH}: argv must be a non-empty string array`
           );
         }
+        // Explicit args.cwd wins; otherwise fall back to the file browser's
+        // current path (a server-relative API path, '' at root). When neither
+        // exists cwd stays undefined and JSON.stringify drops it.
+        const effectiveCwd =
+          cwd !== undefined ? cwd : defaultBrowser?.model.path;
         const launched = await requestAPI<ILaunchTerminalResponse>(
           'launch-terminal',
           app.serviceManager.serverSettings,
           {
             method: 'POST',
-            body: JSON.stringify({ argv, cwd })
+            body: JSON.stringify({ argv, cwd: effectiveCwd })
           }
         );
         const widget: any = await app.commands.execute('terminal:open', {
