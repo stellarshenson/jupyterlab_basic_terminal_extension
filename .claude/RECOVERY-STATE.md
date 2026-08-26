@@ -25,7 +25,7 @@ produced nothing recoverable".
 | Agent | Purpose | Partial output path (check first) |
 | --- | --- | --- |
 | architect reviewer | Mode 2 whole-repo architecture audit of the change set | `reports/adversarial-architect-partial.md` |
-| bug-hunter reviewer | Mode 2 runtime bug hunt - `_INIT_WAITER` bash, pty/WebSocket lifecycle, Makefile-as-shell-program | `reports/adversarial-bug-hunter-partial.md` |
+| bug-hunter reviewer | Mode 2 runtime bug hunt - `_INIT_WAITER` bash, pty/WebSocket lifecycle, Makefile-as-shell-program | **LANDED** - `reports/adversarial-bug-hunter-partial.md` (committed) |
 | graphify semantic extractor | Semantic layer over the 15 docs/workflows | `tmp/graphify-out/.graphify_chunk_01.json` |
 
 **No detached compute existed.** No `nohup`/`setsid` job, no training run, no sweep. The
@@ -114,6 +114,45 @@ the architect lens was spawned to challenge.
   registration only; `make install` is the mandatory build path; versions and releases
   change only on explicit request
 
+### Bug-hunter lens DID return - partial, DO-NOT-SHIP, and NOT yet triaged
+
+`reports/adversarial-bug-hunter-partial.md` (172 lines, committed) holds a partial round-1
+review: `VERDICT: DO-NOT-SHIP (3 findings)`, cut short by the brace. Untriaged. Confirm each
+against the code before acting - a context-free reviewer raises false positives.
+
+Headline findings, verbatim severities:
+
+1. **CRITICAL** - if the pty dies before the browser's WebSocket attaches, terminado has
+   already freed the name, so JupyterLab's `terminal:open` falls through to
+   `terminal:create-new`, which spawns the user's default interactive `$SHELL` under that
+   name - with no cwd and no `_INIT_WAITER`. The exact failure this extension exists to
+   prevent, surfaced as no error at all. Reachable via the 5s waiter timeout, or via any
+   missing/non-executable `argv[0]` (only `/bin/bash` is validated at spawn)
+2. **MAJOR** - `terminal:open` returns undefined on the already-tracked-widget path, so
+   `src/index.ts` silently skips both the focus call and the disposal wiring; the tab then
+   never auto-closes. Reachable because terminado reuses freed integer names
+3. **MAJOR** - the file-browser path is sent without `contents.localPath()`, so a
+   drive-prefixed path (`Drive:some/dir`, e.g. jupyter-fs / S3 / RTC) 400s every no-cwd
+   launch. JupyterLab's own terminal command calls `localPath()` for exactly this reason
+
+It also **cleared** one thing: `pytest` 12/12 pass and the cwd resolution is genuinely
+exercised. And it flagged the `or "~"` fallback in `routes.py` as dead in practice, since
+`server_root_dir` is always set by `jupyter_server`.
+
+> [!WARNING]
+> **The tree changed underneath this reviewer mid-review.** The brace stashed the local
+> implementation and rebased onto origin's `1bf0578` while the lens was still reading. Its
+> `file:line` citations therefore may point at either version. Confirmed shift: the review
+> cites `src/index.ts:47` with `cwd ?? fileBrowser?.model.path`; the checked-out origin
+> version has that logic at `src/index.ts:53-54` as `cwd !== undefined ? cwd : defaultBrowser?.model.path`.
+> Re-anchor every line number before acting on any finding. Finding 3 (`localPath`) does
+> still apply to the checked-out tree - `grep` confirms no `localPath` call in `src/index.ts`.
+
+Unreached scope the lens explicitly declared UNREVIEWED, not clean: `_INIT_WAITER` was never
+executed in a real pty; the Makefile was seen only as a diff, never in full; and
+`.github/workflows/`, `pyproject.toml`, `install.json`, `jupyter-config/`, `ui-tests/`,
+`src/request.ts` and `src/__tests__/` were never opened.
+
 ### CRITICAL - the local change set DIVERGES from what is already on origin
 
 Discovered while pushing this brace commit. `origin/main` already contained
@@ -168,7 +207,7 @@ git checkout stash@{0} -- Makefile .gitignore
 
 ### FIRST ACTION for the next session
 
-Check whether the three partial-output files listed above exist. Then tell the Star
+The bug-hunter partial IS on disk (`reports/adversarial-bug-hunter-partial.md`); check whether the architect lens left anything. Then tell the Star
 Colonel, in one short summary: which lenses left recoverable findings, which left nothing,
 and that the review reached no verdict. Ask whether to re-run the panel from round 1 or to
 triage whatever partials survived. **Do not commit the change set and do not resume the
