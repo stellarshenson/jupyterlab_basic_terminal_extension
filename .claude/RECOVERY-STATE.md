@@ -24,7 +24,7 @@ produced nothing recoverable".
 
 | Agent | Purpose | Partial output path (check first) |
 | --- | --- | --- |
-| architect reviewer | Mode 2 whole-repo architecture audit of the change set | `reports/adversarial-architect-partial.md` |
+| architect reviewer | Mode 2 whole-repo architecture audit of the change set | **LANDED** - `reports/adversarial-architect-partial.md` (committed) |
 | bug-hunter reviewer | Mode 2 runtime bug hunt - `_INIT_WAITER` bash, pty/WebSocket lifecycle, Makefile-as-shell-program | **LANDED** - `reports/adversarial-bug-hunter-partial.md` (committed) |
 | graphify semantic extractor | Semantic layer over the 15 docs/workflows | `tmp/graphify-out/.graphify_chunk_01.json` |
 
@@ -113,6 +113,57 @@ the architect lens was spawned to challenge.
   contract with no shell-string parsing and no `env` passthrough; no UI surface, command
   registration only; `make install` is the mandatory build path; versions and releases
   change only on explicit request
+
+### Architect lens DID return - partial, DO-NOT-SHIP, and NOT yet triaged
+
+`reports/adversarial-architect-partial.md` (132 lines, committed). `VERDICT: DO-NOT-SHIP
+(5 findings)`, all MAJOR, none CRITICAL. Its own summary of the diff: correct, and its
+Python side passes - but the frontend half is verified by nothing and the package's only
+public contract is written down nowhere. Untriaged.
+
+1. **MAJOR** - `/bin/bash` is a bare literal at `routes.py:39` and the hard dependency is
+   declared nowhere (not README, not `pyproject.toml`). The waiter is genuinely
+   bash-specific, so `/bin/sh` is not a substitute. On a bash-less image the tab opens and
+   closes instantly, indistinguishable from "the utility exited"
+2. **MAJOR** - the `or "~"` fallback in the cwd resolution guards a state that cannot occur
+   (`server_root_dir` is set unconditionally by `jupyter_server`) and, if it ever fired,
+   would resolve against `$HOME` and return 200 - a wrong directory reported as success
+3. **MAJOR** - `README.md` never names `basic-terminal:launch`, `argv`, `cwd`, or the
+   endpoint. With no menu, palette or launcher entry, the command id *is* the product.
+   Separately: the new relative-`cwd` rule diverges from the sibling
+   `jupyter_server_terminals` API on the same server, and is a **silent semantic change for
+   callers of the already-published v1.0.6**, where a relative `cwd` meant "relative to the
+   server process cwd"
+4. **MAJOR** - the change is asserted by no test at any level. The Jest spec is still the
+   cookiecutter `expect(1 + 1).toEqual(2)`, so the CI coverage step stands for zero
+   verification; the Python tests assert HTTP status only. Its stated position: either add
+   the two small tests, or delete the frontend test surface - keeping a CI step that
+   advertises coverage it does not have is the one option that is not defensible
+5. **MAJOR** - two package managers own one dependency set (`$(NPM) install` then
+   `jlpm install`), and nothing consumes `package-lock.json`. **Flagged as the owner's call,
+   not a silent edit**: the project `.claude/CLAUDE.md` currently mandates keeping
+   `package-lock.json` committed, and the fix belongs in the *canonical* Makefile at
+   `/home/lab/workspace/private/jupyterlab/@utils/jupyterlab-extensions/Makefile`, since a
+   local-only edit is reverted by the next sync
+
+It also **dismissed with evidence** - do not re-raise these: the `IDefaultFileBrowser`
+singleton-token worry (filebrowser is in core `singletonPackages`); `..` traversal in a
+relative cwd (grants nothing over the locked arbitrary-argv decision); and
+`pip uninstall -y dist/*.whl`, which it actually ran and found works.
+
+Same tree-swap caveat as the bug-hunter: re-anchor line numbers before acting.
+
+Unreviewed, not clean: the five release-related workflows, `RELEASE.md`,
+`.copier-answers.yml`, `ui-tests/playwright.config.js`, `ui-tests/README.md`, `style/*`. No
+TypeScript compile was run, and the file-browser default was never verified against a live
+JupyterLab.
+
+### Both lenses agree on one thing
+
+`routes.py`'s `or "~"` fallback is dead code that would fail silently if reached, and the
+`/bin/bash` hardcoding is undeclared. Two independent lenses reaching the same two spots is
+the strongest signal in this round - but the panel was never adjudicated, so treat even
+that as input to a decision, not a work order.
 
 ### Bug-hunter lens DID return - partial, DO-NOT-SHIP, and NOT yet triaged
 
@@ -207,9 +258,9 @@ git checkout stash@{0} -- Makefile .gitignore
 
 ### FIRST ACTION for the next session
 
-The bug-hunter partial IS on disk (`reports/adversarial-bug-hunter-partial.md`); check whether the architect lens left anything. Then tell the Star
-Colonel, in one short summary: which lenses left recoverable findings, which left nothing,
-and that the review reached no verdict. Ask whether to re-run the panel from round 1 or to
+Both partials ARE on disk under `reports/` and committed. Tell the Star Colonel in one short summary that both lenses returned partial
+DO-NOT-SHIP reviews, that neither was triaged or adjudicated, and that the reviewed tree
+was swapped mid-run. Ask whether to re-run the panel from round 1 or to
 triage whatever partials survived. **Do not commit the change set and do not resume the
 review without the Star Colonel's word.**
 
