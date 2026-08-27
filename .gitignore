@@ -1,6 +1,7 @@
 *.bundle.*
 lib/
 node_modules/
+.nodeenv/
 *.log
 .eslintcache
 .stylelintcache
@@ -126,3 +127,7 @@ dmypy.json
 
 # Yarn cache
 .yarn/
+
+# generated test + analysis artefacts
+junit.xml
+tmp/

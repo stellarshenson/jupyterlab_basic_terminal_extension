@@ -4,3 +4,8 @@ node_modules
 **/package.json
 !/package.json
 jupyterlab_basic_terminal_extension
+
+# Adversarial-review output - verbatim reviewer text, not project source
+reports
+tmp
+.claude

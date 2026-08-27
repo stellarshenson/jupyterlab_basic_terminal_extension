@@ -11,23 +11,50 @@ from jupyter_server.utils import url_path_join
 
 URL_PREFIX = "jupyterlab-basic-terminal-extension"
 
-# bash one-liner that waits for the JL WebSocket client to resize the pty
-# from terminado's default 24x80 before `exec`ing the real argv. A fixed
-# size-threshold check is a no-op (24x80 already passes any "is at least
-# 80 cols" test), so we capture the initial size, install a WINCH trap,
-# and break on either signal or a polled size diff. The exec replaces
-# bash so the pty's only process is the target - auto-close on exit
-# still works. 5s timeout means if no client ever connects we still
-# launch rather than hanging the pty forever.
+# The waiter below is bash-specific - it uses a WINCH trap and process
+# substitution, neither of which /bin/sh provides - so this is a hard
+# runtime requirement of the server extension, not a preference.
+_INIT_SHELL = "/bin/bash"
+
+# Backstop only - how long the waiter sits when NO client ever attaches, as
+# a count of 0.1s polls. A real attach breaks the loop in milliseconds (see
+# the sentinel trick below), so this budget is not on the normal path. It
+# still has to outlast the frontend's POST -> `terminal:open` round-trip:
+# if the pty exits first, terminado frees the name, and `terminal:open`
+# falls through to `terminal:create-new`, which spawns the user's $SHELL
+# under that name - the exact guarantee this extension exists to make.
+_INIT_WAIT_POLLS = 50
+
+# Sentinel size set from inside the pty before the trap is installed. The
+# pty spawns at ptyprocess' 24x80 default, and terminado only issues
+# `setwinsize` when the client's size DIFFERS from the pty's current one
+# (management.py, `resize_to_smallest`) - so a panel that happens to fit to
+# exactly 24x80 would deliver no SIGWINCH and no size diff, and wait out the
+# whole budget as a blank screen. Shrinking to 1x1 first means any real
+# client size differs, so the resize always fires and the wait always ends
+# on attach. Restored to the default below when the timeout wins instead,
+# so a client-less run is not left executing in a 1x1 terminal.
+_INIT_SENTINEL_ROWS = 1
+_INIT_SENTINEL_COLS = 1
+
+# bash one-liner that waits for the JL WebSocket client to size the pty
+# before `exec`ing the real argv, so dialog / TUI utilities paint their
+# first frame at the tab's real width. Capture the (sentinel) size, install
+# a WINCH trap, then break on either the signal or a polled size diff. The
+# exec replaces bash so the pty's only process is the target - auto-close
+# on exit still works. On timeout we launch anyway rather than hang.
 _INIT_WAITER = (
+    f"stty rows {_INIT_SENTINEL_ROWS} cols {_INIT_SENTINEL_COLS} 2>/dev/null; "
     "trap 'CHANGED=1' WINCH; "
     "read R0 C0 < <(stty size 2>/dev/null || echo '0 0'); "
-    "for i in $(seq 1 50); do "
+    f"for i in $(seq 1 {_INIT_WAIT_POLLS}); do "
     'if [ -n "$CHANGED" ]; then break; fi; '
     "read r c < <(stty size 2>/dev/null || echo '0 0'); "
     'if [ "$r" != "$R0" ] || [ "$c" != "$C0" ]; then break; fi; '
     "sleep 0.1; "
     "done; "
+    'if [ -z "$CHANGED" ] && [ "$r" = "$R0" ] && [ "$c" = "$C0" ]; '
+    "then stty rows 24 cols 80 2>/dev/null; fi; "
     "clear; "
     'exec "$@"'
 )
@@ -36,7 +63,7 @@ _INIT_WAITER = (
 def _wrap_with_init(argv: list[str]) -> list[str]:
     """Prepend the terminal-init waiter so the spawned argv only starts once
     the JL terminal widget has connected and sized the pty."""
-    return ["/bin/bash", "-c", _INIT_WAITER, "basic-terminal-init", *argv]
+    return [_INIT_SHELL, "-c", _INIT_WAITER, "basic-terminal-init", *argv]
 
 
 class LaunchTerminalHandler(APIHandler):

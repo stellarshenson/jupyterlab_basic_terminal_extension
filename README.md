@@ -19,11 +19,31 @@ Launch a utility terminal in JupyterLab that runs without a shell. Perfect for s
 
 ## Installation
 
-Requires JupyterLab 4.0.0 or higher.
+Requires JupyterLab 4.0.0 or higher, and `bash` on the server - the terminal
+initialisation step uses bash-specific syntax, so a `sh`-only image will not work.
 
 ```bash
 pip install jupyterlab_basic_terminal_extension
 ```
+
+## Usage
+
+The extension deliberately adds no menu item, palette entry or launcher tile. Its
+entire surface is one command, invoked programmatically by other extensions,
+notebook code, or a `jupyter_app_launcher` tile:
+
+```ts
+await app.commands.execute('basic-terminal:launch', {
+  argv: ['/opt/utils/my-utility.sh'],
+  cwd: 'projects/demo'
+});
+```
+
+- **`argv`** (required) - non-empty array of strings. `argv[0]` is executed directly; there is no shell, so no globbing, pipes or redirection
+- **`cwd`** (optional) - absolute path used as-is, or a server-relative path resolved against `ServerApp.root_dir` (`''` is the root). Omit it and the current file browser folder is used, unless the browser is on a registered non-default drive - such a drive is not assumed to map onto the server filesystem, so the server's own working directory is used instead. A path that does not resolve to a directory is rejected with HTTP 400
+
+The command resolves to the terminal widget, and rejects if the process exits
+before the widget can be displayed.
 
 ## Uninstall
 

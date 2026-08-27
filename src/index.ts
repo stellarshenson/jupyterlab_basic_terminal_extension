@@ -5,6 +5,8 @@ import {
 
 import { IDefaultFileBrowser } from '@jupyterlab/filebrowser';
 
+import { TerminalAPI } from '@jupyterlab/services';
+
 import { requestAPI } from './request';
 
 export interface ILaunchTerminalArgs {
@@ -12,7 +14,8 @@ export interface ILaunchTerminalArgs {
   /**
    * Directory to spawn in - absolute, or a server-relative API path ('' is
    * the server root). When omitted, falls back to the file browser's
-   * current path if the browser is available.
+   * current path, but only while the browser is on the default drive: a
+   * registered drive is not assumed to map onto the server filesystem.
    */
   cwd?: string;
 }
@@ -47,19 +50,57 @@ const plugin: JupyterFrontEndPlugin<void> = {
             `${COMMAND_LAUNCH}: argv must be a non-empty string array`
           );
         }
+        const { contents, serverSettings } = app.serviceManager;
         // Explicit args.cwd wins; otherwise fall back to the file browser's
-        // current path (a server-relative API path, '' at root). When neither
-        // exists cwd stays undefined and JSON.stringify drops it.
+        // current path. That path is a Contents path, so on a registered
+        // drive (jupyter-fs, S3) it reads `Drive:dir`. A registered drive
+        // may still be server-backed - `Drive` keeps its own name out of
+        // every request and defaults to the same `api/contents` endpoint -
+        // but the Contents API cannot be asked which, so only the default
+        // drive is trusted. The rest are skipped rather than stripped:
+        // localPath would hand back `dir`, which the server resolves
+        // against its OWN root, silently launching in an unrelated
+        // directory of the same name. Skipping falls back to the server's
+        // default cwd, and JSON.stringify drops the undefined.
+        const browserPath = defaultBrowser?.model.path;
+        const onServerDrive =
+          browserPath !== undefined && contents.driveName(browserPath) === '';
         const effectiveCwd =
-          cwd !== undefined ? cwd : defaultBrowser?.model.path;
+          cwd !== undefined
+            ? cwd
+            : onServerDrive
+              ? contents.localPath(browserPath as string)
+              : undefined;
         const launched = await requestAPI<ILaunchTerminalResponse>(
           'launch-terminal',
-          app.serviceManager.serverSettings,
+          serverSettings,
           {
             method: 'POST',
             body: JSON.stringify({ argv, cwd: effectiveCwd })
           }
         );
+        // `terminal:open` resolves a name it cannot find by delegating to
+        // `terminal:create-new`, which spawns the user's $SHELL under that
+        // name - no argv, no cwd, no auto-close. So a pty that exits before
+        // the widget mounts does not fail: it silently becomes the very
+        // thing this extension exists to avoid. Confirm the name is still
+        // live and fail loudly instead.
+        //
+        // Deliberately the raw API rather than TerminalManager's cached
+        // `running()`: `refreshRunning()` is a Poll refresh, which dedups
+        // concurrent refreshes, resolves without refetching while on
+        // standby, and swallows request errors. Two launches fired close
+        // together would then share one pre-launch snapshot and the second
+        // would be rejected as dead while its pty ran on unattached.
+        const live = await TerminalAPI.listRunning(serverSettings);
+        const isRunning = live.some(
+          model => model.name === launched.terminal_name
+        );
+        if (!isRunning) {
+          throw new Error(
+            `${COMMAND_LAUNCH}: terminal "${launched.terminal_name}" exited before it could be displayed`
+          );
+        }
         const widget: any = await app.commands.execute('terminal:open', {
           name: launched.terminal_name
         });

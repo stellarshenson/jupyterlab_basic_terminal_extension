@@ -3,6 +3,8 @@ import os
 
 import pytest
 
+from jupyterlab_basic_terminal_extension import routes
+
 
 URL_PATH = ("jupyterlab-basic-terminal-extension", "launch-terminal")
 
@@ -117,3 +119,35 @@ async def test_nonexistent_relative_cwd(jp_fetch):
         )
     assert "400" in str(exc.value)
     assert json.loads(exc.value.response.body)["error"] == "invalid_cwd"
+
+
+def test_waiter_shrinks_the_pty_before_arming_the_resize_trap():
+    """Terminado only resizes when the client size differs from the pty's,
+    so without a sentinel a client fitting to the 24x80 spawn default sends
+    nothing and the waiter stalls for its whole budget. Shrinking first
+    guarantees a difference; the trap must be armed after, or the
+    self-inflicted SIGWINCH ends the wait immediately."""
+    sentinel = f"stty rows {routes._INIT_SENTINEL_ROWS} cols {routes._INIT_SENTINEL_COLS}"
+    assert routes._INIT_WAITER.index(sentinel) < routes._INIT_WAITER.index("trap")
+    assert (routes._INIT_SENTINEL_ROWS, routes._INIT_SENTINEL_COLS) != (24, 80)
+
+
+def test_waiter_restores_a_usable_size_when_no_client_arrives():
+    """The sentinel must not survive into the launched process: a headless
+    run would otherwise execute in a 1x1 terminal."""
+    assert "stty rows 24 cols 80" in routes._INIT_WAITER
+
+
+def test_init_wait_backstop_outlasts_the_frontend_roundtrip():
+    """Only reached when no client ever attaches, but it still has to
+    outlast POST -> terminal:open, or the freed name lets JupyterLab spawn
+    the user's shell in place of the utility."""
+    assert routes._INIT_WAIT_POLLS >= 50  # 0.1s per poll -> >= 5s
+    assert f"seq 1 {routes._INIT_WAIT_POLLS}" in routes._INIT_WAITER
+
+
+def test_argv_is_wrapped_in_bash_without_a_login_shell():
+    wrapped = routes._wrap_with_init(["echo", "hi"])
+    assert wrapped[0] == routes._INIT_SHELL == "/bin/bash"
+    assert wrapped[1] == "-c"
+    assert wrapped[-2:] == ["echo", "hi"]
