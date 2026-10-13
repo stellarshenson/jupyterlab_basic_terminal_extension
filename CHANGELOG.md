@@ -4,6 +4,12 @@
 
 <!-- <END NEW CHANGELOG ENTRY> -->
 
+## [1.0.8] - 2026-10-13
+
+### Fixed
+
+- A launch that the server refuses now rejects with the server's code as the message of the error, for example `invalid_cwd` for a working directory that does not exist. The message was the whole answer object, which a caller that displays it showed as `[object Object]`
+
 ## [1.0.7] - 2026-08-27
 
 ### Fixed

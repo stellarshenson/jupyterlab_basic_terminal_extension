@@ -44,7 +44,12 @@ export async function requestAPI<T>(
   }
 
   if (!response.ok) {
-    throw new ServerConnection.ResponseError(response, data.message || data);
+    // The server names a refusal in the field `error`, for example
+    // `invalid_cwd`. A body object given as the message reads `[object Object]`.
+    throw new ServerConnection.ResponseError(
+      response,
+      data.message || data.error || data
+    );
   }
 
   return data;
