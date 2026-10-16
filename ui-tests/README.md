@@ -42,8 +42,10 @@ cd ..
 
 ```sh
 cd ./ui-tests
-jlpm playwright test
+JUPYTER_TEST_PORT=<free port> jlpm playwright test
 ```
+
+`JUPYTER_TEST_PORT` moves the test server off port 8888; it is needed when another server holds that port.
 
 Test results will be shown in the terminal. In case of any test failures, the test report
 will be opened in your browser at the end of the tests execution; see
@@ -79,7 +81,7 @@ cd ..
 
 ```sh
 cd ./ui-tests
-jlpm playwright test -u
+JUPYTER_TEST_PORT=<free port> jlpm playwright test -u
 ```
 
 > Some discrepancy may occurs between the snapshots generated on your computer and
@@ -115,14 +117,14 @@ cd ..
 
 ```sh
 cd ./ui-tests
-jlpm start
+JUPYTER_TEST_PORT=<free port> jlpm start
 ```
 
 4. Execute the [Playwright code generator](https://playwright.dev/docs/codegen) in **another terminal**:
 
 ```sh
 cd ./ui-tests
-jlpm playwright codegen localhost:8888
+jlpm playwright codegen localhost:<the same port>
 ```
 
 ## Debug tests
@@ -153,7 +155,7 @@ cd ..
 
 ```sh
 cd ./ui-tests
-jlpm playwright test --debug
+JUPYTER_TEST_PORT=<free port> jlpm playwright test --debug
 ```
 
 ## Upgrade Playwright and the browsers

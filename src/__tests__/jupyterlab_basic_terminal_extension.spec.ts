@@ -128,4 +128,89 @@ describe('jupyterlab_basic_terminal_extension', () => {
     await expect(execute({ argv: ['lab-utils'] })).rejects.toThrow();
     expect(app.commands.execute).not.toHaveBeenCalled();
   });
+
+  describe('shutdownOnClose', () => {
+    /** A signal with the connect and emit that the command uses. */
+    function fakeSignal(): any {
+      const slots: Array<(...args: any[]) => void> = [];
+      return {
+        connect: (slot: (...args: any[]) => void) => slots.push(slot),
+        emit: (...args: any[]) => slots.forEach(slot => slot(...args))
+      };
+    }
+
+    /** A terminal session and the tab that shows it, as terminal:open returns them. */
+    function fakeTerminal(): { widget: any; session: any } {
+      const session: any = {
+        isDisposed: false,
+        disposed: fakeSignal(),
+        connectionStatusChanged: fakeSignal(),
+        shutdown: jest.fn(async () => session.dispose()),
+        dispose: () => {
+          if (!session.isDisposed) {
+            session.isDisposed = true;
+            session.disposed.emit();
+          }
+        }
+      };
+      const widget: any = {
+        id: 'terminal-widget',
+        isDisposed: false,
+        disposed: fakeSignal(),
+        content: { session },
+        dispose: () => {
+          if (!widget.isDisposed) {
+            widget.isDisposed = true;
+            widget.disposed.emit();
+          }
+        }
+      };
+      return { widget, session };
+    }
+
+    async function launch(args: any): Promise<{ widget: any; session: any }> {
+      const terminal = fakeTerminal();
+      const app = makeApp();
+      app.commands.execute.mockResolvedValue(terminal.widget);
+      (plugin.activate as any)(app, null);
+      await app.commands.addCommand.mock.calls[0][1].execute(args);
+      return terminal;
+    }
+
+    it('SIB-shutdownOnClose closing the tab shuts the session down when the argument is true', async () => {
+      const { widget, session } = await launch({
+        argv: ['sleep', '300'],
+        shutdownOnClose: true
+      });
+      widget.dispose();
+      expect(session.shutdown).toHaveBeenCalledTimes(1);
+    });
+
+    it('SIB-shutdownOnClose closing the tab leaves the session running when the argument is false', async () => {
+      const { widget, session } = await launch({
+        argv: ['sleep', '300'],
+        shutdownOnClose: false
+      });
+      widget.dispose();
+      expect(session.shutdown).not.toHaveBeenCalled();
+    });
+
+    it('SIB-shutdownOnClose closing the tab leaves the session running when the argument is missing', async () => {
+      const { widget, session } = await launch({ argv: ['sleep', '300'] });
+      widget.dispose();
+      expect(session.shutdown).not.toHaveBeenCalled();
+    });
+
+    it('SIB-shutdownOnClose the end of the program closes the tab without a shutdown', async () => {
+      const { widget, session } = await launch({
+        argv: ['sleep', '300'],
+        shutdownOnClose: true
+      });
+      // The server reports the end of the program: the session is disposed
+      // first, and the command then closes the tab.
+      session.dispose();
+      expect(widget.isDisposed).toBe(true);
+      expect(session.shutdown).not.toHaveBeenCalled();
+    });
+  });
 });

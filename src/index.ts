@@ -18,6 +18,14 @@ export interface ILaunchTerminalArgs {
    * registered drive is not assumed to map onto the server filesystem.
    */
   cwd?: string;
+  /**
+   * When true, closing the tab this command opened while the program
+   * still runs shuts the terminal session down, which ends the program; a
+   * tab the lab restores after a page reload does not carry the argument.
+   * When false or omitted, the lab's terminal setting shutdownOnClose
+   * decides, as in 1.0.8; its default false leaves the program running.
+   */
+  shutdownOnClose?: boolean;
 }
 
 export interface ILaunchTerminalResponse {
@@ -44,7 +52,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
       caption:
         'Spawn a JupyterLab terminal whose only process is the supplied argv. Tab is focused on launch and closes when the process exits.',
       execute: async args => {
-        const { argv, cwd } = args as unknown as ILaunchTerminalArgs;
+        const { argv, cwd, shutdownOnClose } =
+          args as unknown as ILaunchTerminalArgs;
         if (!Array.isArray(argv) || argv.length === 0) {
           throw new Error(
             `${COMMAND_LAUNCH}: argv must be a non-empty string array`
@@ -122,6 +131,20 @@ const plugin: JupyterFrontEndPlugin<void> = {
               }
             }
           );
+          if (shutdownOnClose === true) {
+            // The tab is closed while the program still runs: shut the
+            // session down to end the program. When the program ended
+            // first, the session is already disposed and nothing is sent.
+            widget.disposed?.connect?.(() => {
+              if (!session.isDisposed) {
+                session.shutdown().catch((reason: unknown) => {
+                  console.error(
+                    `${COMMAND_LAUNCH}: terminal "${launched.terminal_name}" not shut down: ${reason}`
+                  );
+                });
+              }
+            });
+          }
         }
         return widget;
       }

@@ -41,6 +41,7 @@ await app.commands.execute('basic-terminal:launch', {
 
 - **`argv`** (required) - non-empty array of strings. `argv[0]` is executed directly; there is no shell, so no globbing, pipes or redirection
 - **`cwd`** (optional) - absolute path used as-is, or a server-relative path resolved against `ServerApp.root_dir` (`''` is the root). Omit it and the current file browser folder is used, unless the browser is on a registered non-default drive - such a drive is not assumed to map onto the server filesystem, so the server's own working directory is used instead. A path that does not resolve to a directory is rejected with HTTP 400
+- **`shutdownOnClose`** (optional, default `false`) - when `true`, closing the tab this command opened while the program still runs shuts the terminal session down, which ends the program; a tab the lab restores after a page reload does not carry the argument. When `false` or omitted, the lab's terminal setting **Shut down on close** decides, as in 1.0.8; its default `false` leaves the program running on the server after the tab is closed
 
 The command resolves to the terminal widget, and rejects if the process exits
 before the widget can be displayed.

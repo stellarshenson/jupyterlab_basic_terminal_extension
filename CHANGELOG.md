@@ -4,6 +4,13 @@
 
 <!-- <END NEW CHANGELOG ENTRY> -->
 
+## [1.0.9] - 2026-10-16
+
+### Added
+
+- `basic-terminal:launch` takes the optional argument `shutdownOnClose`, default `false`. When it is `true` and the user closes the tab while the program still runs, the terminal session is shut down and the program ends. A tab that closes because the program ended sends no shutdown
+- `Makefile` synced to canonical version 1.46
+
 ## [1.0.8] - 2026-10-13
 
 ### Fixed
