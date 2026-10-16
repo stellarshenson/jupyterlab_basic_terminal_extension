@@ -19,7 +19,7 @@ Launch a utility terminal in JupyterLab that runs without a shell. Perfect for s
 
 ## Installation
 
-Requires JupyterLab 4.0.0 or higher, and `bash` on the server - the terminal
+Requires JupyterLab 4.6 or higher, and `bash` on the server - the terminal
 initialisation step uses bash-specific syntax, so a `sh`-only image will not work.
 
 ```bash

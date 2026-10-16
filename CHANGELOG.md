@@ -9,6 +9,10 @@
 ### Added
 
 - `basic-terminal:launch` takes the optional argument `shutdownOnClose`, default `false`. When it is `true` and the user closes the tab while the program still runs, the terminal session is shut down and the program ends. A tab that closes because the program ended sends no shutdown
+
+### Changed
+
+- Requires JupyterLab 4.6 or later and `jupyter_server` 2.21 or later: the package floors follow the extension template v4.6.5, which also moves linting to ESLint 9 and the build to `jupyter-builder`
 - `Makefile` synced to canonical version 1.46
 
 ## [1.0.8] - 2026-10-13
