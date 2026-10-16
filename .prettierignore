@@ -9,3 +9,5 @@ jupyterlab_basic_terminal_extension
 reports
 tmp
 .claude
+eslint.config.mjs
+.venv
