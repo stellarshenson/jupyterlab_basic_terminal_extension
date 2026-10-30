@@ -131,3 +131,6 @@ dmypy.json
 # generated test + analysis artefacts
 junit.xml
 tmp/
+
+# Run output
+logs/

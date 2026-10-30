@@ -11,3 +11,4 @@ tmp
 .claude
 eslint.config.mjs
 .venv
+.agents
