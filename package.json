@@ -1,6 +1,6 @@
 {
     "name": "@stellarshenson/jupyterlab-basic-terminal-extension",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "description": "Jupyterlab extension to make a command that allows launching a utility terminal that runs without shell. This can be used to start and show console utilities, that when finished - close the terminal window / tab",
     "keywords": [
         "jupyter",
