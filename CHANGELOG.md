@@ -2,6 +2,16 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [1.0.11] - 2026-10-30
+
+### Changed
+
+- Upgrade to extension template v4.6.5 and Makefile 1.46
+
+### Fixed
+
+- Take the scoped @stellarshenson/jupyterlab-basic-terminal-extension npm name
+
 <!-- <END NEW CHANGELOG ENTRY> -->
 
 ## [1.0.9] - 2026-10-16
