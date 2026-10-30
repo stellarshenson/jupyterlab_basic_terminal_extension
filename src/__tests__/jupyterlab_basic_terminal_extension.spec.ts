@@ -64,7 +64,7 @@ function postedBody(): any {
   return JSON.parse(requestAPIMock.mock.calls[0][2]?.body as string);
 }
 
-describe('jupyterlab_basic_terminal_extension', () => {
+describe('@stellarshenson/jupyterlab-basic-terminal-extension', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     requestAPIMock.mockResolvedValue({ terminal_name: TERMINAL_NAME });

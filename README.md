@@ -1,7 +1,7 @@
 # jupyterlab_basic_terminal_extension
 
 [![GitHub Actions](https://github.com/stellarshenson/jupyterlab_basic_terminal_extension/actions/workflows/build.yml/badge.svg)](https://github.com/stellarshenson/jupyterlab_basic_terminal_extension/actions/workflows/build.yml)
-[![npm version](https://img.shields.io/npm/v/jupyterlab_basic_terminal_extension.svg)](https://www.npmjs.com/package/jupyterlab_basic_terminal_extension)
+[![npm version](https://img.shields.io/npm/v/@stellarshenson/jupyterlab-basic-terminal-extension.svg)](https://www.npmjs.com/package/@stellarshenson/jupyterlab-basic-terminal-extension)
 [![PyPI version](https://img.shields.io/pypi/v/jupyterlab-basic-terminal-extension.svg)](https://pypi.org/project/jupyterlab-basic-terminal-extension/)
 [![Total PyPI downloads](https://static.pepy.tech/badge/jupyterlab-basic-terminal-extension)](https://pepy.tech/project/jupyterlab-basic-terminal-extension)
 [![JupyterLab 4](https://img.shields.io/badge/JupyterLab-4-orange.svg)](https://jupyterlab.readthedocs.io/en/stable/)

@@ -35,7 +35,7 @@ export interface ILaunchTerminalResponse {
 const COMMAND_LAUNCH = 'basic-terminal:launch';
 
 const plugin: JupyterFrontEndPlugin<void> = {
-  id: 'jupyterlab_basic_terminal_extension:plugin',
+  id: '@stellarshenson/jupyterlab-basic-terminal-extension:plugin',
   description:
     'Launch a JupyterLab terminal whose pty runs a utility directly with no shell. The tab is focused on launch and closes when the process exits.',
   autoStart: true,
@@ -45,7 +45,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     defaultBrowser: IDefaultFileBrowser | null
   ) => {
     console.log(
-      'JupyterLab extension jupyterlab_basic_terminal_extension is activated!'
+      'JupyterLab extension @stellarshenson/jupyterlab-basic-terminal-extension is activated!'
     );
     app.commands.addCommand(COMMAND_LAUNCH, {
       label: 'Launch utility terminal (shell-less)',
