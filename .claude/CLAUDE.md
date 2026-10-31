@@ -27,7 +27,7 @@ The following workspace rules are STRICTLY ENFORCED for this project:
 
 - JupyterLab 4 (`@jupyterlab/application`, `@jupyterlab/coreutils`, `@jupyterlab/services`)
 - TypeScript 5 frontend (`src/`) compiled to `lib/` and bundled into the `labextension/` folder of the Python package
-- Python 3.10+ server extension (`jupyterlab_basic_terminal_extension/`) using `jupyter_server`
+- Python 3.12+ server extension (`jupyterlab_basic_terminal_extension/`) using `jupyter_server`
 - Hatch + `hatch-jupyter-builder` build backend defined in `pyproject.toml`
 - Jest for frontend unit tests, Pytest for server tests, Playwright + Galata for UI integration tests in `ui-tests/`
 - jupyter-releaser for tagged releases via GitHub Actions
