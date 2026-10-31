@@ -22,7 +22,9 @@ jobs:
       - name: Check Release
         uses: jupyter-server/jupyter_releaser/.github/actions/check-release@v2
         with:
+
           token: ${{ secrets.GITHUB_TOKEN }}
+          # template-sync: keep - the repository has no tag, and jupyter-releaser needs these to build without one
           steps_to_skip: "build-changelog"
         env:
           RH_SINCE_LAST_STABLE: 'true'

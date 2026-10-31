@@ -26,7 +26,7 @@ The following workspace rules are STRICTLY ENFORCED for this project:
 **Technology Stack**:
 
 - JupyterLab 4 (`@jupyterlab/application`, `@jupyterlab/coreutils`, `@jupyterlab/services`)
-- TypeScript 5 frontend (`src/`) compiled to `lib/` and bundled into `jupyterlab_basic_terminal_extension/labextension/`
+- TypeScript 5 frontend (`src/`) compiled to `lib/` and bundled into the `labextension/` folder of the Python package
 - Python 3.10+ server extension (`jupyterlab_basic_terminal_extension/`) using `jupyter_server`
 - Hatch + `hatch-jupyter-builder` build backend defined in `pyproject.toml`
 - Jest for frontend unit tests, Pytest for server tests, Playwright + Galata for UI integration tests in `ui-tests/`
@@ -34,7 +34,7 @@ The following workspace rules are STRICTLY ENFORCED for this project:
 
 **Project Naming**:
 
-- npm package: `jupyterlab_basic_terminal_extension`
+- npm package: `@stellarshenson/jupyterlab-basic-terminal-extension`
 - PyPI package: `jupyterlab-basic-terminal-extension` (hyphens, normalized by PyPI)
 
 ## Required Workspace Skills
